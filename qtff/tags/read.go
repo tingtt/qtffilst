@@ -1,6 +1,7 @@
 package tags
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
@@ -43,30 +44,26 @@ func (r *reader) Read() (ilst.ItemList, error) {
 
 		if /* not supporting data */ !strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.") ||
 			box.Id != "data" {
+			slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB)\n", box.Path, box.DataPosition, box.DataSize))
 			continue
 		}
 
-		_, err := r.f.Seek(box.DataPosition, io.SeekStart)
+		buf := &bytes.Buffer{}
+		err = copy(r.f, box.DataPosition, box.DataSize, buf)
 		if err != nil {
 			return ilst.ItemList{}, err
 		}
 
-		buf := make([]byte, box.DataSize)
-		_, err = io.ReadFull(r.f, buf)
-		if err != nil {
-			return ilst.ItemList{}, err
-		}
-
-		err = itemList.Set(strings.Split(box.Path, ".")[5], buf)
+		err = itemList.Set(strings.Split(box.Path, ".")[5], buf.Bytes())
 		if err != nil {
 			return ilst.ItemList{}, fmt.Errorf("%w (id: %s)", err, box.Id)
 		}
 
 		if /* binary data */ strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.covr") {
-			slog.Debug(fmt.Sprintf("box: %v (%v, %vB) binary data (skip display)\n", box.Path, box.DataPosition, box.DataSize))
+			slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB) binary data (skip display)\n", box.Path, box.DataPosition, box.DataSize))
 			continue
 		}
-		slog.Debug(fmt.Sprintf("box: %v (%v, %vB) \"%s\"\n", box.Path, box.DataPosition, box.DataSize, string(buf)))
+		slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB) \"%s\"\n", box.Path, box.DataPosition, box.DataSize, buf.String()))
 	}
 
 	return itemList, nil

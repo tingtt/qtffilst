@@ -9,6 +9,12 @@ var BigEdian = &bigEndian{}
 
 type bigEndian struct{}
 
+func (*bigEndian) BytesI32(num int32) []byte {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, uint32(num))
+	return buf
+}
+
 func (*bigEndian) ReadI16(r io.Reader) (int16, error) {
 	buf := make([]byte, 2)
 	_, err := io.ReadFull(r, buf)
