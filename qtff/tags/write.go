@@ -62,6 +62,7 @@ func (r *readWriter) Read() (ilst.ItemList, error) {
 
 func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds []string) error {
 	ilstSizeDiff := int32(0)
+	oldItemList := ilst.ItemList{}
 
 	// Modify `.moov.udta.meta.ilst`
 	for box, err := range WritableWalk(r.f, r.size, tmpDest) {
@@ -73,17 +74,27 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 			continue
 		}
 
+		buf := &bytes.Buffer{}
+		err = copy(r.f, box.DataPosition, box.DataSize, buf)
+		if err != nil {
+			return err
+		}
+
 		ilstBoxName := ilstDataBoxName(box.Path)
 
+		err = oldItemList.Set(ilstBoxName, buf.Bytes())
+		if err != nil {
+			return err
+		}
+
 		if ilstBoxName == "(c)nam" {
-			buf := &bytes.Buffer{}
-			err = copy(r.f, box.DataPosition, box.DataSize, buf)
+			newTitleC := oldItemList.TitleC
+			newTitleC.Text += " modified"
+			newTitleCBuf, err := newTitleC.Bytes()
 			if err != nil {
 				return err
 			}
-
-			data := append(buf.Bytes(), []byte(" modified")...)
-			size, err := box.Write(data)
+			size, err := box.Write(newTitleCBuf)
 			if err != nil {
 				return err
 			}

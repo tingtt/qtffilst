@@ -5,7 +5,7 @@ import (
 )
 
 func (il *ItemList) Set(id string, value []byte) (err error) {
-	var internationalText internationalText
+	var internationalText InternationalText
 	str := string(value)
 
 	switch id {
@@ -131,6 +131,44 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		internationalText, err = decodeInternationalText(value)
 		il.MovementName = &internationalText
 
+	// int16WithHeader0x15_0
+	case "tmpo":
+		var bpm int16WithHeader0x15_0
+		bpm, err = decodeInt16WithHeader0x15_0(value)
+		il.BeatsPerMinute = &bpm
+	case "atID":
+		var atID int16WithHeader0x15_0
+		atID, err = decodeInt16WithHeader0x15_0(value)
+		il.ArtistID = &atID
+
+	// boolWithHeader0x15_0
+	case "cpil":
+		var cpil boolWithHeader0x15_0
+		cpil, err = decodeBoolWithHeader0x15_0(value)
+		il.Compilation = &cpil
+	case "pgap":
+		var pgap boolWithHeader0x15_0
+		pgap, err = decodeBoolWithHeader0x15_0(value)
+		il.DisableInsertPlayGap = &pgap
+
+	// Genre
+	case "gnre":
+		var genre Genre
+		genre, err = decodeGenre(value)
+		il.Genre = &genre
+
+	// TrackNumber
+	case "trkn":
+		var trackNumber TrackNumber
+		trackNumber, err = decodeTrackNumber(value)
+		il.TrackNumber = &trackNumber
+
+	// DiskNumber
+	case "disk":
+		var diskNumber DiskNumber
+		diskNumber, err = decodeDiskNumber(value)
+		il.DiskNumber = &diskNumber
+
 	// string
 	case "@PST":
 		il.ParentShortTitle = &str
@@ -219,9 +257,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		_, err = binary.Encode(value, binary.BigEndian, il.MediaType)
 
 	// int16
-	case "tmpo":
-		il.BeatsPerMinute = new(int16)
-		_, err = binary.Encode(value, binary.BigEndian, il.BeatsPerMinute)
 	case "(c)mvc":
 		il.MovementCount = new(int16)
 		_, err = binary.Encode(value, binary.BigEndian, il.MovementCount)
@@ -230,28 +265,15 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		_, err = binary.Encode(value, binary.BigEndian, il.MovementNumber)
 
 	// int32
-	case "atID":
-		il.ArtistID = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.ArtistID)
 	case "cnID":
 		il.AppleStoreCatalogID = new(int32)
 		_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreCatalogID)
-	case "disk":
-		il.DiskNumber = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.DiskNumber)
 	case "geID":
 		il.GenreID = new(int32)
 		_, err = binary.Encode(value, binary.BigEndian, il.GenreID)
-	case "gnre":
-		il.Genre = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.Genre)
 	case "sfID":
 		il.AppleStoreCountry = new(int32)
 		_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreCountry)
-	case "trkn":
-		il.TrackNumber = new(int32)
-		il.TrackNumber = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.TrackNumber)
 	case "tves":
 		il.TVEpisode = new(int32)
 		_, err = binary.Encode(value, binary.BigEndian, il.TVEpisode)
@@ -260,9 +282,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		_, err = binary.Encode(value, binary.BigEndian, il.TVSeason)
 
 	// bool
-	case "cpil":
-		il.Compilation = new(bool)
-		_, err = binary.Encode(value, binary.BigEndian, il.Compilation)
 	case "hdvd":
 		il.HDVideo = new(bool)
 		_, err = binary.Encode(value, binary.BigEndian, il.HDVideo)
@@ -272,9 +291,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 	case "pcst":
 		il.Podcast = new(bool)
 		_, err = binary.Encode(value, binary.BigEndian, il.Podcast)
-	case "pgap":
-		il.DisableInsertPlayGap = new(bool)
-		_, err = binary.Encode(value, binary.BigEndian, il.DisableInsertPlayGap)
 	case "shwm":
 		il.ShowMovement = new(bool)
 		_, err = binary.Encode(value, binary.BigEndian, il.ShowMovement)
