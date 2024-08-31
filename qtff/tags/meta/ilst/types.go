@@ -1,5 +1,12 @@
 package ilst
 
+import (
+	"bytes"
+	"qtffilst/internal/binary"
+)
+
+// https://exiftool.org/TagNames/QuickTime.html#ItemList
+// https://developer.apple.com/documentation/quicktime-file-format/user_data_atoms#Media-characteristic-tags
 type ItemList struct {
 	// iTunesInfo	 `id:"----"` // QuickTime iTunesInfo Tags //? Unsupported
 	ParentShortTitle      *string                `id:"@PST"`
@@ -11,7 +18,7 @@ type ItemList struct {
 	UnknownCDET           *string                `id:"CDET"`
 	GUID                  *string                `id:"GUID"`
 	ProductVersion        *string                `id:"VERS"`
-	AlbumArtist           *string                `id:"aART"`
+	AlbumArtist           *InternationalText     `id:"aART"`
 	AppleStoreAccountType *AppleStoreAccountType `id:"akID"`
 	Album                 *string                `id:"albm"`
 	AppleStoreAccount     *string                `id:"apID"`
@@ -22,8 +29,8 @@ type ItemList struct {
 	AppleStoreCatalogID   *int32                 `id:"cnID"`
 	CoverArt              *string                `id:"covr"`
 	Compilation           *bool                  `id:"cpil"`
-	Copyright             *string                `id:"cprt"`
-	Description           *string                `id:"desc"`
+	Copyright             *InternationalText     `id:"cprt"`
+	Description           *InternationalText     `id:"desc"`
 	DiskNumber            *int32                 `id:"disk"`
 	// Description           string `id:"dscp"` //? Unsupported
 	EpisodeGlobalUniqueID *string `id:"egid"`
@@ -49,63 +56,87 @@ type ItemList struct {
 	PurchaseDate *string `id:"purd"`
 	PodcastURL   *string `id:"purl"`
 	// RatingPercent     *string    `id:"rate"`  //? Unsupported
-	ReleaseDate       *string    `id:"rldt"`
-	Rating            *Rating    `id:"rate"`
-	StoreDescription  *string    `id:"sdes"`
-	AppleStoreCountry *int32     `id:"sfID"` // QuickTime AppleStoreCountry Values
-	ShowMovement      *bool      `id:"shwm"`
-	PreviewImage      *string    `id:"snal"`
-	SortAlbumArtist   *string    `id:"soaa"`
-	SortAlbum         *string    `id:"soal"`
-	SortArtist        *string    `id:"soar"`
-	SortComposer      *string    `id:"soco"`
-	SortName          *string    `id:"sonm"`
-	SortShow          *string    `id:"sosn"`
-	MediaType         *MediaType `id:"stik"`
-	Title             *string    `id:"titl"`
-	BeatsPerMinute    *int16     `id:"tmpo"`
-	ThumbnailImage    *string    `id:"tnal"`
-	TrackNumber       *int32     `id:"trkn"`
-	TVEpisodeID       *string    `id:"tven"`
-	TVEpisode         *int32     `id:"tves"`
-	TVNetworkName     *string    `id:"tvnn"`
-	TVShow            *string    `id:"tvsh"`
-	TVSeason          *int32     `id:"tvsn"`
-	ISRC              *string    `id:"xid "`
-	Year              *string    `id:"yrrc"`
-	Artist            *string    `id:"(c)ART"`
-	AlbumC            *string    `id:"(c)alb"`
-	ArtDirector       *string    `id:"(c)ard"`
-	Arranger          *string    `id:"(c)arg"`
-	AuthorC           *string    `id:"(c)aut"`
-	Comment           *string    `id:"(c)cmt"`
-	ComposerC         *string    `id:"(c)com"`
-	Conductor         *string    `id:"(c)con"`
-	CopyrightC        *string    `id:"(c)cpy"`
-	ContentCreateDate *string    `id:"(c)day"`
-	DescriptionC      *string    `id:"(c)des"`
-	Director          *string    `id:"(c)dir"`
-	EncodedBy         *string    `id:"(c)enc"`
-	GenreC            *string    `id:"(c)gen"`
-	GroupingC         *string    `id:"(c)grp"`
-	Lyrics            *string    `id:"(c)lyr"`
-	MovementCount     *int16     `id:"(c)mvc"`
-	MovementNumber    *int16     `id:"(c)mvi"`
-	MovementName      *string    `id:"(c)mvn"`
-	TitleC            *string    `id:"(c)nam"`
-	Narrator          *string    `id:"(c)nrt"`
-	OriginalArtist    *string    `id:"(c)ope"`
-	Producer          *string    `id:"(c)prd"`
-	Publisher         *string    `id:"(c)pub"`
-	SoundEngineer     *string    `id:"(c)sne"`
-	Soloist           *string    `id:"(c)sol"`
-	Subtitle          *string    `id:"(c)st3"`
-	Encoder           *string    `id:"(c)too"`
-	Track             *string    `id:"(c)trk"`
-	Work              *string    `id:"(c)wrk"`
-	ComposerCWRT      *string    `id:"(c)wrt"`
-	ExecutiveProducer *string    `id:"(c)xpd"`
-	GPSCoordinates    *string    `id:"(c)xyz"`
+	ReleaseDate       *string            `id:"rldt"`
+	Rating            *Rating            `id:"rate"`
+	StoreDescription  *string            `id:"sdes"`
+	AppleStoreCountry *int32             `id:"sfID"` // QuickTime AppleStoreCountry Values
+	ShowMovement      *bool              `id:"shwm"`
+	PreviewImage      *string            `id:"snal"`
+	SortAlbumArtist   *InternationalText `id:"soaa"`
+	SortAlbum         *InternationalText `id:"soal"`
+	SortArtist        *InternationalText `id:"soar"`
+	SortComposer      *InternationalText `id:"soco"`
+	SortName          *InternationalText `id:"sonm"`
+	SortShow          *InternationalText `id:"sosn"`
+	MediaType         *MediaType         `id:"stik"`
+	Title             *string            `id:"titl"`
+	BeatsPerMinute    *int16             `id:"tmpo"`
+	ThumbnailImage    *string            `id:"tnal"`
+	TrackNumber       *int32             `id:"trkn"`
+	TVEpisodeID       *string            `id:"tven"`
+	TVEpisode         *int32             `id:"tves"`
+	TVNetworkName     *string            `id:"tvnn"`
+	TVShow            *string            `id:"tvsh"`
+	TVSeason          *int32             `id:"tvsn"`
+	ISRC              *string            `id:"xid "`
+	Year              *string            `id:"yrrc"`
+	Artist            *InternationalText `id:"(c)ART"`
+	AlbumC            *InternationalText `id:"(c)alb"`
+	ArtDirector       *InternationalText `id:"(c)ard"`
+	Arranger          *InternationalText `id:"(c)arg"`
+	AuthorC           *InternationalText `id:"(c)aut"`
+	Comment           *InternationalText `id:"(c)cmt"`
+	ComposerC         *InternationalText `id:"(c)com"`
+	Conductor         *InternationalText `id:"(c)con"`
+	CopyrightC        *InternationalText `id:"(c)cpy"`
+	ContentCreateDate *InternationalText `id:"(c)day"`
+	DescriptionC      *InternationalText `id:"(c)des"`
+	Director          *InternationalText `id:"(c)dir"`
+	EncodedBy         *InternationalText `id:"(c)enc"`
+	GenreC            *InternationalText `id:"(c)gen"`
+	GroupingC         *InternationalText `id:"(c)grp"`
+	Lyrics            *InternationalText `id:"(c)lyr"`
+	MovementCount     *int16             `id:"(c)mvc"`
+	MovementNumber    *int16             `id:"(c)mvi"`
+	MovementName      *InternationalText `id:"(c)mvn"`
+	TitleC            *InternationalText `id:"(c)nam"`
+	Narrator          *InternationalText `id:"(c)nrt"`
+	OriginalArtist    *InternationalText `id:"(c)ope"`
+	Producer          *InternationalText `id:"(c)prd"`
+	Publisher         *InternationalText `id:"(c)pub"`
+	SoundEngineer     *InternationalText `id:"(c)sne"`
+	Soloist           *InternationalText `id:"(c)sol"`
+	Subtitle          *InternationalText `id:"(c)st3"`
+	Encoder           *InternationalText `id:"(c)too"`
+	Track             *InternationalText `id:"(c)trk"`
+	Work              *InternationalText `id:"(c)wrk"`
+	ComposerCWRT      *InternationalText `id:"(c)wrt"`
+	ExecutiveProducer *InternationalText `id:"(c)xpd"`
+	GPSCoordinates    *InternationalText `id:"(c)xyz"`
+}
+
+// https://developer.apple.com/documentation/quicktime-file-format/user_data_atoms#User-data-text-strings-and-language-codes
+type InternationalText struct {
+	Text         string
+	LanguageCode int32
+}
+
+func decodeInternationalText(data []byte) (InternationalText, error) {
+	langCode, err := binary.BigEdian.ReadI32(bytes.NewBuffer(data[:8]))
+	if err != nil {
+		return InternationalText{}, err
+	}
+
+	return InternationalText{
+		Text:         string(data[8:]),
+		LanguageCode: langCode,
+	}, nil
+}
+
+func (it InternationalText) Bytes() []byte {
+	langCodeBuf := binary.BigEdian.BytesI32(it.LanguageCode)
+	textBuf := ([]byte)(it.Text)
+	return append(langCodeBuf, textBuf...)
 }
 
 type (

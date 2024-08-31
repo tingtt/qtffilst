@@ -1,10 +1,137 @@
 package ilst
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+)
 
 func (il *ItemList) Set(id string, value []byte) (err error) {
+	var internationalText internationalText
 	str := string(value)
+
 	switch id {
+	// international text
+	case "aART":
+		internationalText, err = decodeInternationalText(value)
+		il.AlbumArtist = &internationalText
+	case "cprt":
+		internationalText, err = decodeInternationalText(value)
+		il.Copyright = &internationalText
+	case "desc":
+		internationalText, err = decodeInternationalText(value)
+		il.Description = &internationalText
+	case "soaa":
+		internationalText, err = decodeInternationalText(value)
+		il.SortAlbumArtist = &internationalText
+	case "soal":
+		internationalText, err = decodeInternationalText(value)
+		il.SortAlbum = &internationalText
+	case "soar":
+		internationalText, err = decodeInternationalText(value)
+		il.SortArtist = &internationalText
+	case "soco":
+		internationalText, err = decodeInternationalText(value)
+		il.SortComposer = &internationalText
+	case "sonm":
+		internationalText, err = decodeInternationalText(value)
+		il.SortName = &internationalText
+	case "sosn":
+		internationalText, err = decodeInternationalText(value)
+		il.SortShow = &internationalText
+	case "(c)ART":
+		internationalText, err = decodeInternationalText(value)
+		il.Artist = &internationalText
+	case "(c)alb":
+		internationalText, err = decodeInternationalText(value)
+		il.AlbumC = &internationalText
+	case "(c)ard":
+		internationalText, err = decodeInternationalText(value)
+		il.ArtDirector = &internationalText
+	case "(c)arg":
+		internationalText, err = decodeInternationalText(value)
+		il.Arranger = &internationalText
+	case "(c)aut":
+		internationalText, err = decodeInternationalText(value)
+		il.AuthorC = &internationalText
+	case "(c)cmt":
+		internationalText, err = decodeInternationalText(value)
+		il.Comment = &internationalText
+	case "(c)com":
+		internationalText, err = decodeInternationalText(value)
+		il.ComposerC = &internationalText
+	case "(c)con":
+		internationalText, err = decodeInternationalText(value)
+		il.Conductor = &internationalText
+	case "(c)cpy":
+		internationalText, err = decodeInternationalText(value)
+		il.CopyrightC = &internationalText
+	case "(c)day":
+		internationalText, err = decodeInternationalText(value)
+		il.ContentCreateDate = &internationalText
+	case "(c)des":
+		internationalText, err = decodeInternationalText(value)
+		il.DescriptionC = &internationalText
+	case "(c)dir":
+		internationalText, err = decodeInternationalText(value)
+		il.Director = &internationalText
+	case "(c)enc":
+		internationalText, err = decodeInternationalText(value)
+		il.EncodedBy = &internationalText
+	case "(c)gen":
+		internationalText, err = decodeInternationalText(value)
+		il.GenreC = &internationalText
+	case "(c)grp":
+		internationalText, err = decodeInternationalText(value)
+		il.GroupingC = &internationalText
+	case "(c)lyr":
+		internationalText, err = decodeInternationalText(value)
+		il.Lyrics = &internationalText
+	case "(c)nam":
+		internationalText, err = decodeInternationalText(value)
+		il.TitleC = &internationalText
+	case "(c)nrt":
+		internationalText, err = decodeInternationalText(value)
+		il.Narrator = &internationalText
+	case "(c)ope":
+		internationalText, err = decodeInternationalText(value)
+		il.OriginalArtist = &internationalText
+	case "(c)prd":
+		internationalText, err = decodeInternationalText(value)
+		il.Producer = &internationalText
+	case "(c)pub":
+		internationalText, err = decodeInternationalText(value)
+		il.Publisher = &internationalText
+	case "(c)sne":
+		internationalText, err = decodeInternationalText(value)
+		il.SoundEngineer = &internationalText
+	case "(c)sol":
+		internationalText, err = decodeInternationalText(value)
+		il.Soloist = &internationalText
+	case "(c)st3":
+		internationalText, err = decodeInternationalText(value)
+		il.Subtitle = &internationalText
+	case "(c)too":
+		internationalText, err = decodeInternationalText(value)
+		il.Encoder = &internationalText
+	case "(c)trk":
+		internationalText, err = decodeInternationalText(value)
+		il.Track = &internationalText
+	case "(c)wrk":
+		internationalText, err = decodeInternationalText(value)
+		il.Work = &internationalText
+	case "(c)wrt":
+		internationalText, err = decodeInternationalText(value)
+		il.ComposerCWRT = &internationalText
+	case "(c)xpd":
+		internationalText, err = decodeInternationalText(value)
+		il.ExecutiveProducer = &internationalText
+	case "(c)xyz":
+		internationalText, err = decodeInternationalText(value)
+		il.GPSCoordinates = &internationalText
+	case "(c)mvn":
+		internationalText, err = decodeInternationalText(value)
+		il.MovementName = &internationalText
+
+	// string
 	case "@PST":
 		il.ParentShortTitle = &str
 	case "@ppi":
@@ -23,8 +150,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		il.GUID = &str
 	case "VERS":
 		il.ProductVersion = &str
-	case "aART":
-		il.AlbumArtist = &str
 	case "albm":
 		il.Album = &str
 	case "apID":
@@ -37,10 +162,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		il.ComposerID = &str
 	case "covr":
 		il.CoverArt = &str
-	case "cprt":
-		il.Copyright = &str
-	case "desc":
-		il.Description = &str
 	case "grup":
 		il.Grouping = &str
 	case "gshh":
@@ -75,18 +196,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		il.ReleaseDate = &str
 	case "snal":
 		il.PreviewImage = &str
-	case "soaa":
-		il.SortAlbumArtist = &str
-	case "soal":
-		il.SortAlbum = &str
-	case "soar":
-		il.SortArtist = &str
-	case "soco":
-		il.SortComposer = &str
-	case "sonm":
-		il.SortName = &str
-	case "sosn":
-		il.SortShow = &str
 	case "titl":
 		il.Title = &str
 	case "tven":
@@ -97,74 +206,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		il.ISRC = &str
 	case "yrrc":
 		il.Year = &str
-	case "(c)ART":
-		il.Artist = &str
-	case "(c)alb":
-		il.AlbumC = &str
-	case "(c)ard":
-		il.ArtDirector = &str
-	case "(c)arg":
-		il.Arranger = &str
-	case "(c)aut":
-		il.AuthorC = &str
-	case "(c)cmt":
-		il.Comment = &str
-	case "(c)com":
-		il.ComposerC = &str
-	case "(c)con":
-		il.Conductor = &str
-	case "(c)cpy":
-		il.CopyrightC = &str
-	case "(c)day":
-		il.ContentCreateDate = &str
-	case "(c)des":
-		il.DescriptionC = &str
-	case "(c)dir":
-		il.Director = &str
-	case "(c)enc":
-		il.EncodedBy = &str
-	case "(c)gen":
-		il.GenreC = &str
-	case "(c)grp":
-		il.GroupingC = &str
-	case "(c)lyr":
-		il.Lyrics = &str
-	case "sdes":
-		il.StoreDescription = &str
-	case "(c)nam":
-		il.TitleC = &str
-	case "(c)nrt":
-		il.Narrator = &str
-	case "(c)ope":
-		il.OriginalArtist = &str
-	case "(c)prd":
-		il.Producer = &str
-	case "(c)pub":
-		il.Publisher = &str
-	case "(c)sne":
-		il.SoundEngineer = &str
-	case "(c)sol":
-		il.Soloist = &str
-	case "(c)st3":
-		il.Subtitle = &str
-	case "(c)too":
-		il.Encoder = &str
-	case "(c)trk":
-		il.Track = &str
-	case "(c)wrk":
-		il.Work = &str
-	case "(c)wrt":
-		il.ComposerCWRT = &str
-	case "(c)xpd":
-		il.ExecutiveProducer = &str
-	case "(c)xyz":
-		il.GPSCoordinates = &str
-	case "tnal":
-		il.ThumbnailImage = &str
-	case "tvnn":
-		il.TVNetworkName = &str
-	case "(c)mvn":
-		il.MovementName = &str
 
 	// int8
 	case "akID":

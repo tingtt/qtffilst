@@ -42,7 +42,7 @@ func run() error {
 		} else {
 			v := f.value.Elem()
 			if v.IsValid() {
-				fmt.Printf("%s: %v\n", f.tag.Get("id"), v)
+				fmt.Printf("%s: %+v\n", f.tag.Get("id"), v)
 			}
 		}
 	}
