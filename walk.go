@@ -1,4 +1,4 @@
-package tags
+package qtffilst
 
 import (
 	"bytes"
@@ -7,9 +7,10 @@ import (
 	"io"
 	"iter"
 	"log/slog"
-	"qtffilst/internal/binary"
-	"qtffilst/qtff/tags/meta/ilst"
 	"slices"
+
+	"github.com/tingtt/qtffilst/ilst"
+	"github.com/tingtt/qtffilst/internal/binary"
 )
 
 type Box struct {

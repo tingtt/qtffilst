@@ -1,4 +1,4 @@
-package tags
+package qtffilst
 
 import (
 	"bytes"
@@ -6,8 +6,9 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"qtffilst/internal/binary"
-	"qtffilst/qtff/tags/meta/ilst"
+
+	"github.com/tingtt/qtffilst/ilst"
+	"github.com/tingtt/qtffilst/internal/binary"
 )
 
 type Writer interface {
@@ -87,6 +88,7 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 			return err
 		}
 
+		// TODO
 		if ilstBoxName == "(c)nam" {
 			newTitleC := oldItemList.TitleC
 			newTitleC.Text += " modified"

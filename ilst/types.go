@@ -3,7 +3,8 @@ package ilst
 import (
 	"bytes"
 	"errors"
-	"qtffilst/internal/binary"
+
+	"github.com/tingtt/qtffilst/internal/binary"
 )
 
 var (

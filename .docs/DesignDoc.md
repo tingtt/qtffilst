@@ -1,6 +1,6 @@
 # qtffilst
 
-QuickTime File Format `meta.ilst` tag library.
+QuickTime File Format `moov.udta.meta.ilst` tag library.
 
 ## References
 

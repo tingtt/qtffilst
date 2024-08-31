@@ -1,4 +1,4 @@
-package tags
+package qtffilst
 
 import (
 	"bytes"
@@ -6,8 +6,9 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
-	"qtffilst/qtff/tags/meta/ilst"
 	"strings"
+
+	"github.com/tingtt/qtffilst/ilst"
 
 	"gitlab.com/osaki-lab/iowrapper"
 )
@@ -63,7 +64,7 @@ func (r *reader) Read() (ilst.ItemList, error) {
 			slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB) binary data (skip display)\n", box.Path, box.DataPosition, box.DataSize))
 			continue
 		}
-		slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB) \"%s\"\n", box.Path, box.DataPosition, box.DataSize, buf.String()))
+		slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB) \"%+v\"\n", box.Path, box.DataPosition, box.DataSize, buf.Bytes()))
 	}
 
 	return itemList, nil

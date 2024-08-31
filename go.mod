@@ -1,4 +1,4 @@
-module qtffilst
+module github.com/tingtt/qtffilst
 
 go 1.23
 

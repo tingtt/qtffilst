@@ -11,3 +11,4 @@ test:
 .PHONY: build
 build:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO) build -o probe cmd/probe/main.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) $(GO) build -o modify cmd/modify/main.go

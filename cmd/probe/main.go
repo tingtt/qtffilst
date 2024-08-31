@@ -5,10 +5,11 @@ import (
 	"iter"
 	"log/slog"
 	"os"
-	"qtffilst/cmd/probe/clioption"
-	"qtffilst/qtff/tags"
-	"qtffilst/qtff/tags/meta/ilst"
 	"reflect"
+
+	"github.com/tingtt/qtffilst"
+	"github.com/tingtt/qtffilst/cmd/probe/clioption"
+	"github.com/tingtt/qtffilst/ilst"
 )
 
 func main() {
@@ -25,7 +26,7 @@ func run() error {
 		return err
 	}
 
-	r, err := tags.NewReader(cliOption.File)
+	r, err := qtffilst.NewReader(cliOption.File)
 	if err != nil {
 		return err
 	}

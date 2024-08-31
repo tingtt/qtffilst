@@ -3,9 +3,10 @@ package main
 import (
 	"log/slog"
 	"os"
-	"qtffilst/cmd/modify/clioption"
-	"qtffilst/qtff/tags"
-	"qtffilst/qtff/tags/meta/ilst"
+
+	"github.com/tingtt/qtffilst"
+	"github.com/tingtt/qtffilst/cmd/modify/clioption"
+	"github.com/tingtt/qtffilst/ilst"
 )
 
 func main() {
@@ -22,7 +23,7 @@ func run() error {
 		return err
 	}
 
-	r, err := tags.ParseReadWriter(cliOption.File.File)
+	r, err := qtffilst.ParseReadWriter(cliOption.File.File)
 	if err != nil {
 		return err
 	}
