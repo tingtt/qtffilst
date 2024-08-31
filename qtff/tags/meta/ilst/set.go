@@ -1,12 +1,8 @@
 package ilst
 
-import (
-	"encoding/binary"
-)
-
 func (il *ItemList) Set(id string, value []byte) (err error) {
 	var internationalText InternationalText
-	str := string(value)
+	// str := string(value)
 
 	switch id {
 	// international text
@@ -169,131 +165,131 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		diskNumber, err = decodeDiskNumber(value)
 		il.DiskNumber = &diskNumber
 
-	// string
-	case "@PST":
-		il.ParentShortTitle = &str
-	case "@ppi":
-		il.ParentProductID = &str
-	case "@pti":
-		il.ParentTitle = &str
-	case "@sti":
-		il.ShortTitle = &str
-	case "AACR":
-		il.UnknownAACR = &str
-	case "CDEK":
-		il.UnknownCDEK = &str
-	case "CDET":
-		il.UnknownCDET = &str
-	case "GUID":
-		il.GUID = &str
-	case "VERS":
-		il.ProductVersion = &str
-	case "albm":
-		il.Album = &str
-	case "apID":
-		il.AppleStoreAccount = &str
-	case "auth":
-		il.Author = &str
-	case "catg":
-		il.Category = &str
-	case "cmID":
-		il.ComposerID = &str
-	case "covr":
-		il.CoverArt = &str
-	case "grup":
-		il.Grouping = &str
-	case "gshh":
-		il.GoogleHostHeader = &str
-	case "gspm":
-		il.GooglePingMessage = &str
-	case "gspu":
-		il.GooglePingURL = &str
-	case "gssd":
-		il.GoogleSourceData = &str
-	case "gsst":
-		il.GoogleStartTime = &str
-	case "gstd":
-		il.GoogleTrackDuration = &str
-	case "keyw":
-		il.Keyword = &str
-	case "ldes":
-		il.LongDescription = &str
-	case "ownr":
-		il.Owner = &str
-	case "egid":
-		il.EpisodeGlobalUniqueID = &str
-	case "perf":
-		il.Performer = &str
-	case "prID":
-		il.ProductID = &str
-	case "purd":
-		il.PurchaseDate = &str
-	case "purl":
-		il.PodcastURL = &str
-	case "rldt":
-		il.ReleaseDate = &str
-	case "snal":
-		il.PreviewImage = &str
-	case "titl":
-		il.Title = &str
-	case "tven":
-		il.TVEpisodeID = &str
-	case "tvsh":
-		il.TVShow = &str
-	case "xid ":
-		il.ISRC = &str
-	case "yrrc":
-		il.Year = &str
+		// // string
+		// case "@PST":
+		// 	il.ParentShortTitle = &str
+		// case "@ppi":
+		// 	il.ParentProductID = &str
+		// case "@pti":
+		// 	il.ParentTitle = &str
+		// case "@sti":
+		// 	il.ShortTitle = &str
+		// case "AACR":
+		// 	il.UnknownAACR = &str
+		// case "CDEK":
+		// 	il.UnknownCDEK = &str
+		// case "CDET":
+		// 	il.UnknownCDET = &str
+		// case "GUID":
+		// 	il.GUID = &str
+		// case "VERS":
+		// 	il.ProductVersion = &str
+		// case "albm":
+		// 	il.Album = &str
+		// case "apID":
+		// 	il.AppleStoreAccount = &str
+		// case "auth":
+		// 	il.Author = &str
+		// case "catg":
+		// 	il.Category = &str
+		// case "cmID":
+		// 	il.ComposerID = &str
+		// case "covr":
+		// 	il.CoverArt = &str
+		// case "grup":
+		// 	il.Grouping = &str
+		// case "gshh":
+		// 	il.GoogleHostHeader = &str
+		// case "gspm":
+		// 	il.GooglePingMessage = &str
+		// case "gspu":
+		// 	il.GooglePingURL = &str
+		// case "gssd":
+		// 	il.GoogleSourceData = &str
+		// case "gsst":
+		// 	il.GoogleStartTime = &str
+		// case "gstd":
+		// 	il.GoogleTrackDuration = &str
+		// case "keyw":
+		// 	il.Keyword = &str
+		// case "ldes":
+		// 	il.LongDescription = &str
+		// case "ownr":
+		// 	il.Owner = &str
+		// case "egid":
+		// 	il.EpisodeGlobalUniqueID = &str
+		// case "perf":
+		// 	il.Performer = &str
+		// case "prID":
+		// 	il.ProductID = &str
+		// case "purd":
+		// 	il.PurchaseDate = &str
+		// case "purl":
+		// 	il.PodcastURL = &str
+		// case "rldt":
+		// 	il.ReleaseDate = &str
+		// case "snal":
+		// 	il.PreviewImage = &str
+		// case "titl":
+		// 	il.Title = &str
+		// case "tven":
+		// 	il.TVEpisodeID = &str
+		// case "tvsh":
+		// 	il.TVShow = &str
+		// case "xid ":
+		// 	il.ISRC = &str
+		// case "yrrc":
+		// 	il.Year = &str
 
-	// int8
-	case "akID":
-		il.AppleStoreAccountType = new(int8)
-		_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreAccountType)
-	case "rate":
-		il.Rating = new(int8)
-		_, err = binary.Encode(value, binary.BigEndian, il.Rating)
-	case "stik":
-		il.MediaType = new(int8)
-		_, err = binary.Encode(value, binary.BigEndian, il.MediaType)
+		// // int8
+		// case "akID":
+		// 	il.AppleStoreAccountType = new(int8)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreAccountType)
+		// case "rate":
+		// 	il.Rating = new(int8)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.Rating)
+		// case "stik":
+		// 	il.MediaType = new(int8)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.MediaType)
 
-	// int16
-	case "(c)mvc":
-		il.MovementCount = new(int16)
-		_, err = binary.Encode(value, binary.BigEndian, il.MovementCount)
-	case "(c)mvi":
-		il.MovementNumber = new(int16)
-		_, err = binary.Encode(value, binary.BigEndian, il.MovementNumber)
+		// // int16
+		// case "(c)mvc":
+		// 	il.MovementCount = new(int16)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.MovementCount)
+		// case "(c)mvi":
+		// 	il.MovementNumber = new(int16)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.MovementNumber)
 
-	// int32
-	case "cnID":
-		il.AppleStoreCatalogID = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreCatalogID)
-	case "geID":
-		il.GenreID = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.GenreID)
-	case "sfID":
-		il.AppleStoreCountry = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreCountry)
-	case "tves":
-		il.TVEpisode = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.TVEpisode)
-	case "tvsn":
-		il.TVSeason = new(int32)
-		_, err = binary.Encode(value, binary.BigEndian, il.TVSeason)
+		// // int32
+		// case "cnID":
+		// 	il.AppleStoreCatalogID = new(int32)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreCatalogID)
+		// case "geID":
+		// 	il.GenreID = new(int32)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.GenreID)
+		// case "sfID":
+		// 	il.AppleStoreCountry = new(int32)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.AppleStoreCountry)
+		// case "tves":
+		// 	il.TVEpisode = new(int32)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.TVEpisode)
+		// case "tvsn":
+		// 	il.TVSeason = new(int32)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.TVSeason)
 
-	// bool
-	case "hdvd":
-		il.HDVideo = new(bool)
-		_, err = binary.Encode(value, binary.BigEndian, il.HDVideo)
-	case "itnu":
-		il.ITunesU = new(bool)
-		_, err = binary.Encode(value, binary.BigEndian, il.ITunesU)
-	case "pcst":
-		il.Podcast = new(bool)
-		_, err = binary.Encode(value, binary.BigEndian, il.Podcast)
-	case "shwm":
-		il.ShowMovement = new(bool)
-		_, err = binary.Encode(value, binary.BigEndian, il.ShowMovement)
+		// // bool
+		// case "hdvd":
+		// 	il.HDVideo = new(bool)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.HDVideo)
+		// case "itnu":
+		// 	il.ITunesU = new(bool)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.ITunesU)
+		// case "pcst":
+		// 	il.Podcast = new(bool)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.Podcast)
+		// case "shwm":
+		// 	il.ShowMovement = new(bool)
+		// 	_, err = binary.Encode(value, binary.BigEndian, il.ShowMovement)
 	}
 	return err
 }
