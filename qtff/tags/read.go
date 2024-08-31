@@ -42,8 +42,7 @@ func (r *reader) Read() (ilst.ItemList, error) {
 			return ilst.ItemList{}, err
 		}
 
-		if /* not supporting data */ !strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.") ||
-			box.Id != "data" {
+		if /* not supporting data */ !ilstDataBox(box) {
 			slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB)\n", box.Path, box.DataPosition, box.DataSize))
 			continue
 		}
@@ -54,7 +53,8 @@ func (r *reader) Read() (ilst.ItemList, error) {
 			return ilst.ItemList{}, err
 		}
 
-		err = itemList.Set(strings.Split(box.Path, ".")[5], buf.Bytes())
+		ilstBoxName := ilstDataBoxName(box.Path)
+		err = itemList.Set(ilstBoxName, buf.Bytes())
 		if err != nil {
 			return ilst.ItemList{}, fmt.Errorf("%w (id: %s)", err, box.Id)
 		}

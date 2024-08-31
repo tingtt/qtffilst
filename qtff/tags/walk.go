@@ -106,7 +106,7 @@ func containableBox(boxName string) bool {
 
 type WritableBox struct {
 	Box
-	Set func([]byte) (size int64, err error)
+	Write func([]byte) (size int64, err error)
 }
 
 func WritableWalk(rs io.ReadSeeker, size int64, dest io.Writer) iter.Seq2[WritableBox, error] {
@@ -175,7 +175,10 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, basePath
 			newDataBuf *bytes.Buffer = &bytes.Buffer{}
 		)
 
-		setter := func(data []byte) (size int64, err error) {
+		writer := func(data []byte) (size int64, err error) {
+			if modified {
+				return 0, fmt.Errorf("`%s` already written", currPath)
+			}
 			modified = true
 			_, err = newDataBuf.Write(data)
 			if err != nil {
@@ -192,7 +195,7 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, basePath
 				DataPosition: dataPosition,
 				DataSize:     dataSize,
 			},
-			setter,
+			writer,
 		})
 		if !_continue {
 			return ErrBreakWalk

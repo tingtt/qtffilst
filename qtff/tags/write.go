@@ -8,7 +8,6 @@ import (
 	"os"
 	"qtffilst/internal/binary"
 	"qtffilst/qtff/tags/meta/ilst"
-	"strings"
 )
 
 type Writer interface {
@@ -70,11 +69,13 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 			return err
 		}
 
-		if !strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.") || box.Id != "data" {
+		if /* not supporting data */ !ilstDataBox(box.Box) {
 			continue
 		}
 
-		if box.Path == ".moov.udta.meta.ilst.(c)nam.data" {
+		ilstBoxName := ilstDataBoxName(box.Path)
+
+		if ilstBoxName == "(c)nam" {
 			buf := &bytes.Buffer{}
 			err = copy(r.f, box.DataPosition, box.DataSize, buf)
 			if err != nil {
@@ -82,7 +83,7 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 			}
 
 			data := append(buf.Bytes(), []byte(" modified")...)
-			size, err := box.Set(data)
+			size, err := box.Write(data)
 			if err != nil {
 				return err
 			}
@@ -102,49 +103,53 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 			return err
 		}
 
-		if box.Path == ".moov.trak.mdia.minf.stbl.stco" {
-			// Data format
-			// https://developer.apple.com/documentation/quicktime-file-format/chunk_offset_atom
-			buf := &bytes.Buffer{}
+		if box.Path != ".moov.trak.mdia.minf.stbl.stco" {
+			continue
+		}
 
-			{ // copy fixed fields (version, flags, number of entries)
-				err = copy(tmpDest, box.DataPosition, 8, buf)
-				if err != nil {
-					return err
-				}
-			}
+		// Data format
+		// https://developer.apple.com/documentation/quicktime-file-format/chunk_offset_atom
+		buf := &bytes.Buffer{}
 
-			var entryCount int32
-			{ // get entry count
-				entryCountBuf := &bytes.Buffer{}
-				err = copy(tmpDest, box.DataPosition+4, 4, entryCountBuf)
-				if err != nil {
-					return err
-				}
-				entryCount, err = binary.BigEdian.ReadI32(entryCountBuf)
-				if err != nil {
-					return err
-				}
-			}
-
-			positionOfChunkOffsetTable := box.DataPosition + 8
-			tmpDest.Seek(positionOfChunkOffsetTable, io.SeekStart) // Seek to chunk offset table
-			for range entryCount {
-				offset, err := binary.BigEdian.ReadI32(tmpDest)
-				if err != nil {
-					return err
-				}
-				slog.Debug(fmt.Sprintf("offset: %8d -> %8d (%+d)\n", offset, offset+ilstSizeDiff, ilstSizeDiff))
-				newOffset := binary.BigEdian.BytesI32(offset + ilstSizeDiff)
-				_, err = buf.Write(newOffset)
-				if err != nil {
-					return err
-				}
-			}
-			_, err = box.Set(buf.Bytes())
+		{ // copy fixed fields (version, flags, number of entries)
+			err = copy(tmpDest, box.DataPosition, 8, buf)
 			if err != nil {
 				return err
 			}
+		}
+
+		var entryCount int32
+		{ // get entry count
+			_, err = tmpDest.Seek(box.DataPosition+4, io.SeekStart)
+			if err != nil {
+				return err
+			}
+			entryCount, err = binary.BigEdian.ReadI32(tmpDest)
+			if err != nil {
+				return err
+			}
+		}
+
+		// create new chunk offset table
+		positionOfChunkOffsetTable := box.DataPosition + 8
+		tmpDest.Seek(positionOfChunkOffsetTable, io.SeekStart) // Seek to chunk offset table
+		for range entryCount {
+			offset, err := binary.BigEdian.ReadI32(tmpDest)
+			if err != nil {
+				return err
+			}
+			slog.Debug(fmt.Sprintf("offset: %8d -> %8d (%+d)\n", offset, offset+ilstSizeDiff, ilstSizeDiff))
+			newOffset := binary.BigEdian.BytesI32(offset + ilstSizeDiff)
+			_, err = buf.Write(newOffset)
+			if err != nil {
+				return err
+			}
+		}
+
+		// write new `.moov.trak.mdia.minf.stbl.stco`
+		_, err = box.Write(buf.Bytes())
+		if err != nil {
+			return err
 		}
 	}
 
