@@ -57,7 +57,7 @@ func (r *reader) Read() (ilst.ItemList, error) {
 		ilstBoxName := ilstDataBoxName(box.Path)
 		err = itemList.Set(ilstBoxName, buf.Bytes())
 		if err != nil {
-			return ilst.ItemList{}, fmt.Errorf("%w (id: %s)", err, box.Id)
+			return ilst.ItemList{}, fmt.Errorf("%w (id: %s)", err, box.Name)
 		}
 
 		if /* binary data */ strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.covr") {

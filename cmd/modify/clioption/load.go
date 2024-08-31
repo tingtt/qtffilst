@@ -11,6 +11,7 @@ type CLIOption struct {
 	File        f
 	Dest        *os.File
 	TmpDest     *os.File
+	TmpDest2    *os.File
 	KeepTmpFile bool
 }
 
@@ -35,7 +36,7 @@ func Load() (CLIOption, error) {
 	if err != nil {
 		return CLIOption{}, err
 	}
-	dest, tmpDest, err := createDestFile(destPath, tmpDestPath)
+	dest, tmpDest, tmpDest2, err := createDestFile(destPath, tmpDestPath)
 	if err != nil {
 		return CLIOption{}, err
 	}
@@ -44,5 +45,5 @@ func Load() (CLIOption, error) {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
-	return CLIOption{file, dest, tmpDest, *keepTmpFile}, nil
+	return CLIOption{file, dest, tmpDest, tmpDest2, *keepTmpFile}, nil
 }

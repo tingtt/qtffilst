@@ -14,11 +14,12 @@ import (
 )
 
 type Box struct {
-	Id           string
-	Level        int64
-	Path         string
-	DataPosition int64
-	DataSize     int64
+	Name          string
+	Level         int8
+	Path          string
+	DataPosition  int64
+	DataSize      int32
+	IsContainable bool
 }
 
 const (
@@ -40,7 +41,7 @@ func Walk(rs io.ReadSeeker, size int64) iter.Seq2[Box, error] {
 	}
 }
 
-func walkBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, path string, yield func(Box) (_continue bool)) (err error) {
+func walkBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, path string, yield func(Box) (_continue bool)) (err error) {
 	startPosition, err := rs.Seek(offset, io.SeekStart)
 	if err != nil {
 		return err
@@ -65,11 +66,12 @@ func walkBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, path string,
 	}
 
 	_continue := yield(Box{
-		Id:           boxName,
-		Level:        level,
-		Path:         path + "." + boxName,
-		DataPosition: startPosition + 8,  /* add size (bytes) of fixed fields (size, name)) */
-		DataSize:     int64(boxSize) - 8, /* add size (bytes) of fixed fields (size, name)) */
+		Name:          boxName,
+		Level:         level,
+		Path:          path + "." + boxName,
+		DataPosition:  startPosition + 8, /* add size (bytes) of fixed fields (size, name)) */
+		DataSize:      boxSize - 8,       /* add size (bytes) of fixed fields (size, name)) */
+		IsContainable: false,
 	})
 	if !_continue {
 		return ErrBreakWalk
@@ -83,6 +85,17 @@ func walkBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, path string,
 		err = walkBoxes(rs, endPosition, childOffset, level+1, path+"."+boxName, yield)
 		if err != nil {
 			return err
+		}
+		_continue := yield(Box{
+			Name:          boxName,
+			Level:         level,
+			Path:          path + "." + boxName,
+			DataPosition:  startPosition + 8, /* add size (bytes) of fixed fields (size, name)) */
+			DataSize:      boxSize - 8,       /* add size (bytes) of fixed fields (size, name)) */
+			IsContainable: true,
+		})
+		if !_continue {
+			return ErrBreakWalk
 		}
 	}
 
@@ -107,7 +120,8 @@ func containableBox(boxName string) bool {
 
 type WritableBox struct {
 	Box
-	Write func([]byte) (size int64, err error)
+	Write        func([]byte) (size int32, err error)
+	InsertNewBox func(name string, data []byte) (size int32, err error)
 }
 
 func WritableWalk(rs io.ReadSeeker, size int64, dest io.Writer) iter.Seq2[WritableBox, error] {
@@ -122,7 +136,7 @@ func WritableWalk(rs io.ReadSeeker, size int64, dest io.Writer) iter.Seq2[Writab
 	}
 }
 
-func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, basePath string, dest io.Writer, yield func(box WritableBox) (_continue bool)) (err error) {
+func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, basePath string, dest io.Writer, yield func(box WritableBox) (_continue bool)) (err error) {
 	startPosition, err := rs.Seek(offset, io.SeekStart)
 	if err != nil {
 		return err
@@ -146,71 +160,95 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset, level int64, basePath
 		boxName = "(c)" + boxName[1:]
 	}
 
-	currPath := basePath + "." + boxName
+	box := Box{
+		Name:          boxName,
+		Level:         level,
+		Path:          basePath + "." + boxName,
+		DataPosition:  startPosition + 8, /* add size (bytes) of fixed fields (size, name)) */
+		DataSize:      boxSize - 8,       /* add size (bytes) of fixed fields (size, name)) */
+		IsContainable: containableBox(boxName),
+	}
 
-	if containableBox(boxName) {
-		childOffset := startPosition + 8 /* add size (bytes) of fixed fields (size, name)) */
+	if box.IsContainable {
+		childOffset := box.DataPosition
 		childBuf := &bytes.Buffer{}
-		if boxName == "meta" {
+		if box.Name == "meta" {
 			childBuf.Write(bytes.Repeat([]byte{0x0}, 4))
 			childOffset += 4 /* bytes */
 		}
-		slog.Debug(fmt.Sprintf("%-36s    ->", currPath))
-		err = walkCopyBoxes(rs, endPosition, childOffset, level+1, currPath, childBuf, yield)
+		slog.Debug(fmt.Sprintf("%-36s    ->", box.Path))
+		err = walkCopyBoxes(rs, endPosition, childOffset, level+1, box.Path, childBuf, yield)
 		if err != nil {
 			return err
 		}
 		slog.Debug(fmt.Sprintf("%-36s    [] %8d -> %8d (%+d)\n",
-			currPath, boxSize-8, childBuf.Len(), childBuf.Len()-int(boxSize-8),
+			box.Path, box.DataSize, childBuf.Len(), int32(childBuf.Len())-box.DataSize,
 		))
+
+		var insertBoxes map[string][]byte = map[string][]byte{}
+		nextBoxWriter := func(name string, data []byte) (size int32, err error) {
+			if len(name) != 4 {
+				return 0, fmt.Errorf("invalid box name length")
+			}
+			insertBoxes[name] = data
+			boxLengthWillWrite := int32(len(data) + 4 + 4)
+			return boxLengthWillWrite, nil
+		}
+		_continue := yield(WritableBox{box,
+			nil, // containable box does not support modify content
+			nextBoxWriter,
+		})
+		if !_continue {
+			return ErrBreakWalk
+		}
 		err = writeBox(dest, boxNameBuf, childBuf.Bytes())
 		if err != nil {
 			return fmt.Errorf("failed to write box: %w", err)
 		}
+		for name, data := range insertBoxes {
+			insertBoxPath := basePath + "." + name
+			insertBoxLength := len(data) + 8
+			slog.Debug(fmt.Sprintf("%-36s    +  %8d -> %8d (%+d)\n", insertBoxPath, 0, insertBoxLength, insertBoxLength))
+			err = writeBox(dest, []byte(name), data)
+			if err != nil {
+				return fmt.Errorf("failed to write box: %w (%s)", err, insertBoxPath)
+			}
+		}
 	} else /* writable data */ {
-		dataPosition := startPosition + 8 /* add size (bytes) of fixed fields (size, name)) */
-		dataSize := int64(boxSize) - 8    /* add size (bytes) of fixed fields (size, name)) */
-
 		var (
 			modified   bool          = false
 			newDataBuf *bytes.Buffer = &bytes.Buffer{}
 		)
 
-		writer := func(data []byte) (size int64, err error) {
+		writer := func(data []byte) (size int32, err error) {
 			if modified {
-				return 0, fmt.Errorf("`%s` already written", currPath)
+				return 0, fmt.Errorf("`%s` already written", box.Path)
 			}
 			modified = true
 			_, err = newDataBuf.Write(data)
 			if err != nil {
 				return 0, err
 			}
-			return int64(newDataBuf.Len()), nil
+			return int32(newDataBuf.Len()), nil
 		}
 
-		_continue := yield(WritableBox{
-			Box{
-				Id:           boxName,
-				Level:        level,
-				Path:         currPath,
-				DataPosition: dataPosition,
-				DataSize:     dataSize,
-			},
+		_continue := yield(WritableBox{box,
 			writer,
+			nil, // `data` box does not support to insert next box
 		})
 		if !_continue {
 			return ErrBreakWalk
 		}
 		if !modified {
-			copy(rs, dataPosition, dataSize, newDataBuf)
+			copy(rs, box.DataPosition, box.DataSize, newDataBuf)
 		}
 
 		slog.Debug(fmt.Sprintf("%-36s    *  %8d -> %8d (%+d)\n",
-			currPath, dataSize, newDataBuf.Len(), newDataBuf.Len()-int(dataSize),
+			box.Path, box.DataSize, newDataBuf.Len(), int32(newDataBuf.Len())-box.DataSize,
 		))
 		err = writeBox(dest, boxNameBuf, newDataBuf.Bytes())
 		if err != nil {
-			return fmt.Errorf("failed to write box: %w", err)
+			return fmt.Errorf("failed to write box: %w (%s)", err, box.Path)
 		}
 	}
 
@@ -240,7 +278,7 @@ func writeBox(dest io.Writer, name []byte, data []byte) error {
 	return nil
 }
 
-func copy(rs io.ReadSeeker, position, size int64, w io.Writer) error {
+func copy(rs io.ReadSeeker, position int64, size int32, w io.Writer) error {
 	_, err := rs.Seek(position, io.SeekStart)
 	if err != nil {
 		return err

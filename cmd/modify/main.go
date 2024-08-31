@@ -28,13 +28,14 @@ func run() error {
 		return err
 	}
 
-	err = r.Write(cliOption.Dest, cliOption.TmpDest, ilst.ItemList{}, nil)
+	err = r.Write(cliOption.Dest, cliOption.TmpDest, cliOption.TmpDest2, ilst.ItemList{}, nil)
 	if err != nil {
 		return err
 	}
 
 	if !cliOption.KeepTmpFile {
 		os.Remove(cliOption.TmpDest.Name())
+		os.Remove(cliOption.TmpDest2.Name())
 	}
 
 	return nil

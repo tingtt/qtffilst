@@ -25,19 +25,19 @@ type ItemList struct {
 	// UnknownCDET           *string                `id:"CDET"`
 	// GUID                  *string                `id:"GUID"`
 	// ProductVersion        *string                `id:"VERS"`
-	AlbumArtist *InternationalText `id:"aART"`
+	AlbumArtist *internationalText `id:"aART"`
 	// AppleStoreAccountType *AppleStoreAccountType `id:"akID"`
 	// Album                 *string                `id:"albm"`
 	// AppleStoreAccount     *string                `id:"apID"`
-	ArtistID *int16WithHeader0x15_0 `id:"atID"`
+	ArtistID *Int16WithHeader0x15_0 `id:"atID"`
 	// Author                *string                `id:"auth"`
 	// Category              *string                `id:"catg"`
 	// ComposerID            *string                `id:"cmID"`
 	// AppleStoreCatalogID   *int32                 `id:"cnID"`
 	// CoverArt              *string                `id:"covr"`
-	Compilation *boolWithHeader0x15_0 `id:"cpil"`
-	Copyright   *InternationalText    `id:"cprt"`
-	Description *InternationalText    `id:"desc"`
+	Compilation *BoolWithHeader0x15_0 `id:"cpil"`
+	Copyright   *internationalText    `id:"cprt"`
+	Description *internationalText    `id:"desc"`
 	DiskNumber  *DiskNumber           `id:"disk"`
 	// Description           string `id:"dscp"` //? Unsupported
 	// EpisodeGlobalUniqueID *string               `id:"egid"`
@@ -57,27 +57,27 @@ type ItemList struct {
 	// Owner                 *string               `id:"ownr"`
 	// Podcast               *bool                 `id:"pcst"`
 	// Performer             *string               `id:"perf"`
-	DisableInsertPlayGap *boolWithHeader0x15_0 `id:"pgap"`
+	DisableInsertPlayGap *BoolWithHeader0x15_0 `id:"pgap"`
 	// AlbumID	int32[2]	  `id:"plID"` //? Unsupported, because I can’t understand document.
 	// ProductID    *string `id:"prID"`
 	// PurchaseDate *string `id:"purd"`
 	// PodcastURL   *string `id:"purl"`
 	// RatingPercent     *string    `id:"rate"`  //? Unsupported
-	// ReleaseDate       *string                `id:"rldt"`
+	ReleaseDate *internationalText `id:"rldt"`
 	// Rating            *Rating                `id:"rate"`
 	// StoreDescription  *string                `id:"sdes"`
 	// AppleStoreCountry *int32                 `id:"sfID"` // QuickTime AppleStoreCountry Values
 	// ShowMovement      *bool                  `id:"shwm"`
 	// PreviewImage      *string                `id:"snal"`
-	SortAlbumArtist *InternationalText `id:"soaa"`
-	SortAlbum       *InternationalText `id:"soal"`
-	SortArtist      *InternationalText `id:"soar"`
-	SortComposer    *InternationalText `id:"soco"`
-	SortName        *InternationalText `id:"sonm"`
-	SortShow        *InternationalText `id:"sosn"`
+	SortAlbumArtist *internationalText `id:"soaa"`
+	SortAlbum       *internationalText `id:"soal"`
+	SortArtist      *internationalText `id:"soar"`
+	SortComposer    *internationalText `id:"soco"`
+	SortName        *internationalText `id:"sonm"`
+	SortShow        *internationalText `id:"sosn"`
 	// MediaType         *MediaType             `id:"stik"`
 	// Title             *string                `id:"titl"`
-	BeatsPerMinute *int16WithHeader0x15_0 `id:"tmpo"`
+	BeatsPerMinute *Int16WithHeader0x15_0 `id:"tmpo"`
 	// ThumbnailImage    *string                `id:"tnal"`
 	TrackNumber *TrackNumber `id:"trkn"`
 	// TVEpisodeID       *string            `id:"tven"`
@@ -87,70 +87,81 @@ type ItemList struct {
 	// TVSeason          *int32             `id:"tvsn"`
 	// ISRC              *string            `id:"xid "`
 	// Year              *string            `id:"yrrc"`
-	Artist            *InternationalText `id:"(c)ART"`
-	AlbumC            *InternationalText `id:"(c)alb"`
-	ArtDirector       *InternationalText `id:"(c)ard"`
-	Arranger          *InternationalText `id:"(c)arg"`
-	AuthorC           *InternationalText `id:"(c)aut"`
-	Comment           *InternationalText `id:"(c)cmt"`
-	ComposerC         *InternationalText `id:"(c)com"`
-	Conductor         *InternationalText `id:"(c)con"`
-	CopyrightC        *InternationalText `id:"(c)cpy"`
-	ContentCreateDate *InternationalText `id:"(c)day"`
-	DescriptionC      *InternationalText `id:"(c)des"`
-	Director          *InternationalText `id:"(c)dir"`
-	EncodedBy         *InternationalText `id:"(c)enc"`
-	GenreC            *InternationalText `id:"(c)gen"`
-	GroupingC         *InternationalText `id:"(c)grp"`
-	Lyrics            *InternationalText `id:"(c)lyr"`
+	Artist            *internationalText `id:"(c)ART"`
+	AlbumC            *internationalText `id:"(c)alb"`
+	ArtDirector       *internationalText `id:"(c)ard"`
+	Arranger          *internationalText `id:"(c)arg"`
+	AuthorC           *internationalText `id:"(c)aut"`
+	Comment           *internationalText `id:"(c)cmt"`
+	ComposerC         *internationalText `id:"(c)com"`
+	Conductor         *internationalText `id:"(c)con"`
+	CopyrightC        *internationalText `id:"(c)cpy"`
+	ContentCreateDate *internationalText `id:"(c)day"`
+	DescriptionC      *internationalText `id:"(c)des"`
+	Director          *internationalText `id:"(c)dir"`
+	EncodedBy         *internationalText `id:"(c)enc"`
+	GenreC            *internationalText `id:"(c)gen"`
+	GroupingC         *internationalText `id:"(c)grp"`
+	Lyrics            *internationalText `id:"(c)lyr"`
 	// MovementCount     *int16             `id:"(c)mvc"`
 	// MovementNumber    *int16             `id:"(c)mvi"`
-	MovementName      *InternationalText `id:"(c)mvn"`
-	TitleC            *InternationalText `id:"(c)nam"`
-	Narrator          *InternationalText `id:"(c)nrt"`
-	OriginalArtist    *InternationalText `id:"(c)ope"`
-	Producer          *InternationalText `id:"(c)prd"`
-	Publisher         *InternationalText `id:"(c)pub"`
-	SoundEngineer     *InternationalText `id:"(c)sne"`
-	Soloist           *InternationalText `id:"(c)sol"`
-	Subtitle          *InternationalText `id:"(c)st3"`
-	Encoder           *InternationalText `id:"(c)too"`
-	Track             *InternationalText `id:"(c)trk"`
-	Work              *InternationalText `id:"(c)wrk"`
-	ComposerCWRT      *InternationalText `id:"(c)wrt"`
-	ExecutiveProducer *InternationalText `id:"(c)xpd"`
-	GPSCoordinates    *InternationalText `id:"(c)xyz"`
+	MovementName      *internationalText `id:"(c)mvn"`
+	TitleC            *internationalText `id:"(c)nam"`
+	Narrator          *internationalText `id:"(c)nrt"`
+	OriginalArtist    *internationalText `id:"(c)ope"`
+	Producer          *internationalText `id:"(c)prd"`
+	Publisher         *internationalText `id:"(c)pub"`
+	SoundEngineer     *internationalText `id:"(c)sne"`
+	Soloist           *internationalText `id:"(c)sol"`
+	Subtitle          *internationalText `id:"(c)st3"`
+	Encoder           *internationalText `id:"(c)too"`
+	Track             *internationalText `id:"(c)trk"`
+	Work              *internationalText `id:"(c)wrk"`
+	ComposerCWRT      *internationalText `id:"(c)wrt"`
+	ExecutiveProducer *internationalText `id:"(c)xpd"`
+	GPSCoordinates    *internationalText `id:"(c)xyz"`
 }
 
 // https://developer.apple.com/documentation/quicktime-file-format/user_data_atoms#User-data-text-strings-and-language-codes
-type InternationalText struct {
+type internationalText struct {
 	size         int32
 	Text         string
 	LanguageCode int32
 }
 
-func decodeInternationalText(data []byte) (InternationalText, error) {
+func NewInternationalText(text string) *internationalText {
+	return &internationalText{
+		size:         1,
+		Text:         text,
+		LanguageCode: 0,
+	}
+}
+
+func decodeInternationalText(data []byte) (internationalText, error) {
 	if len(data) < 8 {
-		return InternationalText{}, ErrInvalidLength
+		return internationalText{}, ErrInvalidLength
 	}
 	size, err := binary.BigEdian.ReadI32(bytes.NewBuffer(data[:4]))
 	if err != nil {
-		return InternationalText{}, err
+		return internationalText{}, err
 	}
 	langCode, err := binary.BigEdian.ReadI32(bytes.NewBuffer(data[4:8]))
 	if err != nil {
-		return InternationalText{}, err
+		return internationalText{}, err
 	}
 
-	return InternationalText{
+	return internationalText{
 		size:         size,
 		Text:         string(data[8:]),
 		LanguageCode: langCode,
 	}, nil
 }
 
-func (it InternationalText) Bytes() ([]byte, error) {
+func (it internationalText) Bytes() ([]byte, error) {
 	buf := &bytes.Buffer{}
+	if it.size == 0 {
+		it.size = 1
+	}
 	_, err := buf.Write(binary.BigEdian.BytesI32(it.size))
 	if err != nil {
 		return nil, err
@@ -323,44 +334,44 @@ func (tn DiskNumber) Bytes() ([]byte, error) {
 	return append(HEADER, valueBuf.Bytes()...), nil
 }
 
-type int16WithHeader0x15_0 struct {
+type Int16WithHeader0x15_0 struct {
 	Value int16
 }
 
-func decodeInt16WithHeader0x15_0(data []byte) (int16WithHeader0x15_0, error) {
+func decodeInt16WithHeader0x15_0(data []byte) (Int16WithHeader0x15_0, error) {
 	if len(data) < 10 {
-		return int16WithHeader0x15_0{}, ErrInvalidLength
+		return Int16WithHeader0x15_0{}, ErrInvalidLength
 	}
 	value, err := binary.BigEdian.ReadI16(bytes.NewBuffer(data[8:]))
 	if err != nil {
-		return int16WithHeader0x15_0{}, err
+		return Int16WithHeader0x15_0{}, err
 	}
 
-	return int16WithHeader0x15_0{value}, nil
+	return Int16WithHeader0x15_0{value}, nil
 }
 
-func (i int16WithHeader0x15_0) Bytes() []byte {
+func (i Int16WithHeader0x15_0) Bytes() []byte {
 	HEADER := []byte{0x0, 0x0, 0x0, 0x15, 0x0, 0x0, 0x0, 0x0}
 	valueBuf := binary.BigEdian.BytesI16(i.Value)
 	return append(HEADER, valueBuf...)
 }
 
-type boolWithHeader0x15_0 struct {
+type BoolWithHeader0x15_0 struct {
 	Value bool
 }
 
-func decodeBoolWithHeader0x15_0(data []byte) (boolWithHeader0x15_0, error) {
+func decodeBoolWithHeader0x15_0(data []byte) (BoolWithHeader0x15_0, error) {
 	if len(data) < 9 {
-		return boolWithHeader0x15_0{}, ErrInvalidLength
+		return BoolWithHeader0x15_0{}, ErrInvalidLength
 	}
 	value, err := binary.BigEdian.ReadI8(bytes.NewBuffer(append([]byte{0x0}, data[8:]...)))
 	if err != nil {
-		return boolWithHeader0x15_0{}, err
+		return BoolWithHeader0x15_0{}, err
 	}
-	return boolWithHeader0x15_0{value != 0}, nil
+	return BoolWithHeader0x15_0{value != 0}, nil
 }
 
-func (i boolWithHeader0x15_0) Bytes() []byte {
+func (i BoolWithHeader0x15_0) Bytes() []byte {
 	HEADER := []byte{0x0, 0x0, 0x0, 0x15, 0x0, 0x0, 0x0, 0x0}
 	intBool := int8(0)
 	if i.Value {

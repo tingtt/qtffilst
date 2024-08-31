@@ -6,13 +6,15 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/tingtt/qtffilst/ilst"
 	"github.com/tingtt/qtffilst/internal/binary"
 )
 
 type Writer interface {
-	Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds []string) error
+	Write(dest, tmpDest, tmpDest2 *os.File, tags ilst.ItemList, deleteIds []string) error
 }
 
 type ReadWriter interface {
@@ -61,9 +63,16 @@ func (r *readWriter) Read() (ilst.ItemList, error) {
 	return r.reader.Read()
 }
 
-func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds []string) error {
+func (r *readWriter) Write(dest, tmpDest, tmpDest2 *os.File, newItemList ilst.ItemList, deleteIds []string) error {
+	// TODO: remove test data
+	newItemList.TitleC = ilst.NewInternationalText("modified title")
+	newItemList.ReleaseDate = ilst.NewInternationalText(time.Date(2024, time.September, 1, 0, 0, 0, 0, time.UTC).Format(time.DateOnly))
+	modifyItemIds := map[string]any{"(c)nam": nil, "rldt": nil}
+	// TODO: remove test data
+
 	ilstSizeDiff := int32(0)
 	oldItemList := ilst.ItemList{}
+	lastLoadedIlstBoxName := ""
 
 	// Modify `.moov.udta.meta.ilst`
 	for box, err := range WritableWalk(r.f, r.size, tmpDest) {
@@ -74,6 +83,9 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 		if /* not supporting data */ !ilstDataBox(box.Box) {
 			continue
 		}
+		if box.Write == nil {
+			panic(fmt.Sprintf("box writer is nil (path: %s)", box.Path))
+		}
 
 		buf := &bytes.Buffer{}
 		err = copy(r.f, box.DataPosition, box.DataSize, buf)
@@ -82,17 +94,17 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 		}
 
 		ilstBoxName := ilstDataBoxName(box.Path)
+		lastLoadedIlstBoxName = ilstBoxName
 
 		err = oldItemList.Set(ilstBoxName, buf.Bytes())
 		if err != nil {
 			return err
 		}
 
-		// TODO
+		// TODO: write new data to matched box
 		if ilstBoxName == "(c)nam" {
-			newTitleC := oldItemList.TitleC
-			newTitleC.Text += " modified"
-			newTitleCBuf, err := newTitleC.Bytes()
+			delete(modifyItemIds, ilstBoxName)
+			newTitleCBuf, err := newItemList.TitleC.Bytes()
 			if err != nil {
 				return err
 			}
@@ -101,7 +113,20 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 				return err
 			}
 
-			ilstSizeDiff += int32(size - box.DataSize)
+			ilstSizeDiff += size - box.DataSize
+		}
+		if ilstBoxName == "rldt" {
+			delete(modifyItemIds, ilstBoxName)
+			dataBuf, err := newItemList.ReleaseDate.Bytes()
+			if err != nil {
+				return err
+			}
+			size, err := box.Write(dataBuf)
+			if err != nil {
+				return err
+			}
+
+			ilstSizeDiff += size - box.DataSize
 		}
 	}
 
@@ -110,8 +135,44 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 		return err
 	}
 
+	// Create remaining items `.moov.udta.meta.ilst`
+	for box, err := range WritableWalk(tmpDest, stat.Size(), tmpDest2) {
+		if err != nil {
+			return err
+		}
+
+		if /* not supporting data */ !strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.") || !box.IsContainable {
+			continue
+		}
+		if box.InsertNewBox == nil {
+			panic(fmt.Sprintf("box writer is nil (path: %s)", box.Path))
+		}
+
+		if box.Name == lastLoadedIlstBoxName {
+			dataBuf, err := newItemList.ReleaseDate.Bytes()
+			if err != nil {
+				return err
+			}
+			buf := &bytes.Buffer{}
+			err = writeBox(buf, []byte("data"), dataBuf)
+			if err != nil {
+				return err
+			}
+			size, err := box.InsertNewBox("rldt", buf.Bytes())
+			if err != nil {
+				return err
+			}
+			ilstSizeDiff += size
+		}
+	}
+
+	stat2, err := tmpDest2.Stat()
+	if err != nil {
+		return err
+	}
+
 	// Modify `.moov.trak.mdia.minf.stbl.stco`
-	for box, err := range WritableWalk(tmpDest, stat.Size(), dest) {
+	for box, err := range WritableWalk(tmpDest2, stat2.Size(), dest) {
 		if err != nil {
 			return err
 		}
@@ -125,7 +186,7 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 		buf := &bytes.Buffer{}
 
 		{ // copy fixed fields (version, flags, number of entries)
-			err = copy(tmpDest, box.DataPosition, 8, buf)
+			err = copy(tmpDest2, box.DataPosition, 8, buf)
 			if err != nil {
 				return err
 			}
@@ -133,11 +194,11 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 
 		var entryCount int32
 		{ // get entry count
-			_, err = tmpDest.Seek(box.DataPosition+4, io.SeekStart)
+			_, err = tmpDest2.Seek(box.DataPosition+4, io.SeekStart)
 			if err != nil {
 				return err
 			}
-			entryCount, err = binary.BigEdian.ReadI32(tmpDest)
+			entryCount, err = binary.BigEdian.ReadI32(tmpDest2)
 			if err != nil {
 				return err
 			}
@@ -145,9 +206,9 @@ func (r *readWriter) Write(dest, tmpDest *os.File, tags ilst.ItemList, deleteIds
 
 		// create new chunk offset table
 		positionOfChunkOffsetTable := box.DataPosition + 8
-		tmpDest.Seek(positionOfChunkOffsetTable, io.SeekStart) // Seek to chunk offset table
+		tmpDest2.Seek(positionOfChunkOffsetTable, io.SeekStart) // Seek to chunk offset table
 		for range entryCount {
-			offset, err := binary.BigEdian.ReadI32(tmpDest)
+			offset, err := binary.BigEdian.ReadI32(tmpDest2)
 			if err != nil {
 				return err
 			}

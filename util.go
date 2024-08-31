@@ -4,7 +4,8 @@ import "strings"
 
 func ilstDataBox(box Box) bool {
 	return strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.") &&
-		box.Id == "data"
+		!box.IsContainable &&
+		box.Name == "data"
 }
 
 func ilstDataBoxName(path string) string {

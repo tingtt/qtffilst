@@ -20,12 +20,12 @@ func loadFile(filePath *string) (f, error) {
 	return f{file, stat.Size()}, nil
 }
 
-func createDestFile(destFilePath, tmpDestFilePath *string) (dest *os.File, tmpDest *os.File, err error) {
+func createDestFile(destFilePath, tmpDestFilePath *string) (dest *os.File, tmpDest, tmpDest2 *os.File, err error) {
 	if *destFilePath == "" {
-		return nil, nil, errors.New("CLI option `--out`,`-o` cannot be empty")
+		return nil, nil, nil, errors.New("CLI option `--out`,`-o` cannot be empty")
 	}
 	if *destFilePath == *tmpDestFilePath {
-		return nil, nil, errors.New("CLI option `--out` and `--tmp` cannot be same")
+		return nil, nil, nil, errors.New("CLI option `--out` and `--tmp` cannot be same")
 	}
 	if *tmpDestFilePath == "" {
 		*tmpDestFilePath = *destFilePath + ".tmp"
@@ -33,11 +33,15 @@ func createDestFile(destFilePath, tmpDestFilePath *string) (dest *os.File, tmpDe
 
 	dest, err = os.Create(*destFilePath)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	tmpDest, err = os.Create(*tmpDestFilePath)
+	tmpDest, err = os.Create(*tmpDestFilePath + "1")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
-	return dest, tmpDest, nil
+	tmpDest2, err = os.Create(*tmpDestFilePath + "2")
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return dest, tmpDest, tmpDest2, nil
 }

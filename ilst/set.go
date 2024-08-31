@@ -1,7 +1,7 @@
 package ilst
 
 func (il *ItemList) Set(id string, value []byte) (err error) {
-	var internationalText InternationalText
+	var internationalText internationalText
 	// str := string(value)
 
 	switch id {
@@ -15,6 +15,9 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 	case "desc":
 		internationalText, err = decodeInternationalText(value)
 		il.Description = &internationalText
+	case "rldt":
+		internationalText, err = decodeInternationalText(value)
+		il.ReleaseDate = &internationalText
 	case "soaa":
 		internationalText, err = decodeInternationalText(value)
 		il.SortAlbumArtist = &internationalText
@@ -127,23 +130,23 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		internationalText, err = decodeInternationalText(value)
 		il.MovementName = &internationalText
 
-	// int16WithHeader0x15_0
+	// Int16WithHeader0x15_0
 	case "tmpo":
-		var bpm int16WithHeader0x15_0
+		var bpm Int16WithHeader0x15_0
 		bpm, err = decodeInt16WithHeader0x15_0(value)
 		il.BeatsPerMinute = &bpm
 	case "atID":
-		var atID int16WithHeader0x15_0
+		var atID Int16WithHeader0x15_0
 		atID, err = decodeInt16WithHeader0x15_0(value)
 		il.ArtistID = &atID
 
-	// boolWithHeader0x15_0
+	// BoolWithHeader0x15_0
 	case "cpil":
-		var cpil boolWithHeader0x15_0
+		var cpil BoolWithHeader0x15_0
 		cpil, err = decodeBoolWithHeader0x15_0(value)
 		il.Compilation = &cpil
 	case "pgap":
-		var pgap boolWithHeader0x15_0
+		var pgap BoolWithHeader0x15_0
 		pgap, err = decodeBoolWithHeader0x15_0(value)
 		il.DisableInsertPlayGap = &pgap
 
@@ -226,8 +229,6 @@ func (il *ItemList) Set(id string, value []byte) (err error) {
 		// 	il.PurchaseDate = &str
 		// case "purl":
 		// 	il.PodcastURL = &str
-		// case "rldt":
-		// 	il.ReleaseDate = &str
 		// case "snal":
 		// 	il.PreviewImage = &str
 		// case "titl":
