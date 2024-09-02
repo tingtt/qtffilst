@@ -1,11 +1,14 @@
 package ilst
 
-func (il *ItemList) Set(id string, value []byte) (err error) {
-	for _, v := range IdWriters(il, WithSomeId(id)) {
-		err := v.set(value)
-		if err != nil {
-			return err
-		}
+import (
+	"errors"
+
+	"github.com/tingtt/iterutil"
+)
+
+func (il *ItemList) Set(id string, value []byte) error {
+	for _, v := range iterutil.FilterKey(IdWriters(il), id) {
+		return v.set(value)
 	}
-	return err
+	return errors.New("field not found")
 }
