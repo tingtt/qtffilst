@@ -49,7 +49,7 @@ func newWritableValue(id string, field reflect.Value) writableValue {
 
 	set := func(buf []byte) (err error) {
 		switch v.(type) {
-		case *InternationalText:
+		case *internationalText:
 			err = setField(field, decodeInternationalText, buf)
 		case *Genre:
 			err = setField(field, decodeGenre, buf)
