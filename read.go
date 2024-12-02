@@ -55,7 +55,7 @@ func (r *reader) Read() (ilst.ItemList, error) {
 		}
 
 		ilstBoxName := ilstDataBoxName(box.Path)
-		err = itemList.Set(ilstBoxName, buf.Bytes())
+		err = itemList.SetDecoded(ilstBoxName, buf.Bytes())
 		if err != nil {
 			return ilst.ItemList{}, fmt.Errorf("%w (id: %s)", err, box.Name)
 		}

@@ -8,6 +8,7 @@ import (
 	"iter"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"github.com/tingtt/qtffilst/ilst"
 	"github.com/tingtt/qtffilst/internal/binary"
@@ -50,20 +51,11 @@ func walkBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, path st
 		return nil
 	}
 
-	boxSize, err := binary.BigEdian.ReadI32(rs)
+	boxSize, boxName, err := readBoxHeader(rs)
 	if err != nil {
 		return err
 	}
 	endPosition := startPosition + int64(boxSize)
-
-	boxNameBuf, err := binary.Read(rs, 4)
-	if err != nil {
-		return err
-	}
-	boxName := string(boxNameBuf)
-	if boxNameBuf[0] == 0xA9 {
-		boxName = "(c)" + boxName[1:]
-	}
 
 	_continue := yield(Box{
 		Name:          boxName,
@@ -145,20 +137,11 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, bas
 		return nil
 	}
 
-	boxSize, err := binary.BigEdian.ReadI32(rs)
+	boxSize, boxName, err := readBoxHeader(rs)
 	if err != nil {
 		return err
 	}
 	endPosition := startPosition + int64(boxSize)
-
-	boxNameBuf, err := binary.Read(rs, 4)
-	if err != nil {
-		return err
-	}
-	boxName := string(boxNameBuf)
-	if boxNameBuf[0] == 0xA9 {
-		boxName = "(c)" + boxName[1:]
-	}
 
 	box := Box{
 		Name:          boxName,
@@ -187,9 +170,6 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, bas
 
 		var insertBoxes map[string][]byte = map[string][]byte{}
 		nextBoxWriter := func(name string, data []byte) (size int32, err error) {
-			if len(name) != 4 {
-				return 0, fmt.Errorf("invalid box name length")
-			}
 			insertBoxes[name] = data
 			boxLengthWillWrite := int32(len(data) + 4 + 4)
 			return boxLengthWillWrite, nil
@@ -201,15 +181,17 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, bas
 		if !_continue {
 			return ErrBreakWalk
 		}
-		err = writeBox(dest, boxNameBuf, childBuf.Bytes())
-		if err != nil {
-			return fmt.Errorf("failed to write box: %w", err)
+		if childBuf.Len() != 0 {
+			err = writeBox(dest, box.Name, childBuf.Bytes())
+			if err != nil {
+				return fmt.Errorf("failed to write box: %w", err)
+			}
 		}
 		for name, data := range insertBoxes {
 			insertBoxPath := basePath + "." + name
 			insertBoxLength := len(data) + 8
 			slog.Debug(fmt.Sprintf("%-36s    +  %8d -> %8d (%+d)\n", insertBoxPath, 0, insertBoxLength, insertBoxLength))
-			err = writeBox(dest, []byte(name), data)
+			err = writeBox(dest, name, data)
 			if err != nil {
 				return fmt.Errorf("failed to write box: %w (%s)", err, insertBoxPath)
 			}
@@ -246,9 +228,11 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, bas
 		slog.Debug(fmt.Sprintf("%-36s    *  %8d -> %8d (%+d)\n",
 			box.Path, box.DataSize, newDataBuf.Len(), int32(newDataBuf.Len())-box.DataSize,
 		))
-		err = writeBox(dest, boxNameBuf, newDataBuf.Bytes())
-		if err != nil {
-			return fmt.Errorf("failed to write box: %w (%s)", err, box.Path)
+		if /* box data not removed */ newDataBuf.Len() != 0 {
+			err = writeBox(dest, box.Name, newDataBuf.Bytes())
+			if err != nil {
+				return fmt.Errorf("failed to write box: %w (%s)", err, box.Path)
+			}
 		}
 	}
 
@@ -259,15 +243,36 @@ func walkCopyBoxes(rs io.ReadSeeker, parentEndsAt, offset int64, level int8, bas
 	return walkCopyBoxes(rs, parentEndsAt, nextStartPosition, level, basePath, dest, yield)
 }
 
-func writeBox(dest io.Writer, name []byte, data []byte) error {
+func readBoxHeader(rs io.ReadSeeker) (size int32, name string, err error) {
+	size, err = binary.BigEdian.ReadI32(rs)
+	if err != nil {
+		return 0, "", err
+	}
+
+	boxNameBuf, err := binary.Read(rs, 4)
+	if err != nil {
+		return 0, "", err
+	}
+	name = string(boxNameBuf)
+	if boxNameBuf[0] == 0xA9 {
+		name = "(c)" + name[1:]
+	}
+
+	return size, name, nil
+}
+
+func writeBox(dest io.Writer, name string, data []byte) error {
 	_, err := dest.Write(binary.BigEdian.BytesI32(int32(len(data) + 8)))
 	if err != nil {
 		return err
 	}
-	if len(name) != 4 {
-		return fmt.Errorf("invalid name length")
+	if strings.HasPrefix(name, "(c)") {
+		name = string([]byte{0xA9}) + name[3:]
 	}
-	_, err = dest.Write(name)
+	if len(name) != 4 {
+		return fmt.Errorf("invalid name length (\"%s\")", name)
+	}
+	_, err = dest.Write([]byte(name))
 	if err != nil {
 		return err
 	}

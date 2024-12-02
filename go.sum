@@ -15,6 +15,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/tingtt/iterutil v1.1.0 h1:K1MP8EItQWjmmUrTUXOhb/r47v6NTqOAsKW5TDi9yI4=
 github.com/tingtt/iterutil v1.1.0/go.mod h1:0BwBNNCoMBVdr400ljIrKz3VbxKAp1mGAj/3DdVBklU=
+github.com/tingtt/iterutil v1.1.1 h1:9RCLC9MyoMs1yaULVkWp62D7/8OzUP7RDAbei/86qZA=
+github.com/tingtt/iterutil v1.1.1/go.mod h1:0BwBNNCoMBVdr400ljIrKz3VbxKAp1mGAj/3DdVBklU=
 gitlab.com/osaki-lab/iowrapper v0.0.0-20201210013351-bab12bc19f54 h1:6oOjLToJ+6mxNmZNUoo4nMEKVMLQmAusn0ZsHMo+hls=
 gitlab.com/osaki-lab/iowrapper v0.0.0-20201210013351-bab12bc19f54/go.mod h1:5EpUyrgTO7ctaBkiXnxgmFuoXlJ3fwopf66RJKUnvKw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

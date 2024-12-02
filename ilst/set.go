@@ -6,9 +6,9 @@ import (
 	"github.com/tingtt/iterutil"
 )
 
-func (il *ItemList) Set(id string, value []byte) error {
-	for _, v := range iterutil.FilterKey(IdWriters(il), id) {
-		return v.set(value)
+func (il *ItemList) SetDecoded(id string, value []byte) error {
+	for _, v := range iterutil.FilterKey(IterateFieldWriters(il), id) {
+		return v.SetDecoded(value)
 	}
 	return errors.New("field not found")
 }

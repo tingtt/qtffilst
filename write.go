@@ -2,13 +2,15 @@ package qtffilst
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"log/slog"
+	"maps"
 	"os"
-	"strings"
-	"time"
 
+	"github.com/tingtt/iterutil"
 	"github.com/tingtt/qtffilst/ilst"
 	"github.com/tingtt/qtffilst/internal/binary"
 )
@@ -64,24 +66,28 @@ func (r *readWriter) Read() (ilst.ItemList, error) {
 }
 
 func (r *readWriter) Write(dest, tmpDest, tmpDest2 *os.File, newItemList ilst.ItemList, deleteIds []string) error {
-	// TODO: remove test data
-	newItemList.TitleC = ilst.NewInternationalText("modified title")
-	newItemList.ReleaseDate = ilst.NewInternationalText(time.Date(2024, time.September, 1, 0, 0, 0, 0, time.UTC).Format(time.DateOnly))
-	modifyItemIds := map[string]any{"(c)nam": nil, "rldt": nil}
-	// TODO: remove test data
+	modifyItemIds := maps.Collect(ilst.Values(&newItemList))
+	for _, deleteId := range deleteIds {
+		modifyItemIds[deleteId] = nil
+	}
+
+	if len(modifyItemIds) == 0 && len(deleteIds) == 0 {
+		_, err := r.f.Seek(0, io.SeekStart)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(dest, r.f)
+		return err
+	}
 
 	ilstSizeDiff := int32(0)
 	oldItemList := ilst.ItemList{}
 	lastLoadedIlstBoxName := ""
 
 	// Modify `.moov.udta.meta.ilst`
-	for box, err := range WritableWalk(r.f, r.size, tmpDest) {
+	for box, err := range WalkSupportedWritabelBox(WritableWalk(r.f, r.size, tmpDest)) {
 		if err != nil {
 			return err
-		}
-
-		if /* not supporting data */ !ilstDataBox(box.Box) {
-			continue
 		}
 		if box.Write == nil {
 			panic(fmt.Sprintf("box writer is nil (path: %s)", box.Path))
@@ -96,37 +102,42 @@ func (r *readWriter) Write(dest, tmpDest, tmpDest2 *os.File, newItemList ilst.It
 		ilstBoxName := ilstDataBoxName(box.Path)
 		lastLoadedIlstBoxName = ilstBoxName
 
-		err = oldItemList.Set(ilstBoxName, buf.Bytes())
+		err = oldItemList.SetDecoded(ilstBoxName, buf.Bytes())
 		if err != nil {
 			return err
 		}
 
-		// TODO: write new data to matched box
-		if ilstBoxName == "(c)nam" {
-			delete(modifyItemIds, ilstBoxName)
-			newTitleCBuf, err := newItemList.TitleC.Bytes()
+		if /* expect remove */ v, exists := modifyItemIds[ilstBoxName]; exists && v == nil {
+			// Remove matched box
+			_, err = box.Write(nil)
 			if err != nil {
 				return err
 			}
-			size, err := box.Write(newTitleCBuf)
-			if err != nil {
-				return err
-			}
+			slog.Info("remove", slog.String("id", ilstBoxName), slog.String("diff", fmt.Sprintf("%+d", -box.DataSize)))
 
-			ilstSizeDiff += size - box.DataSize
+			ilstSizeDiff -= box.DataSize /* current box size */ + 16 /* parent box header size */
+			continue
 		}
-		if ilstBoxName == "rldt" {
-			delete(modifyItemIds, ilstBoxName)
-			dataBuf, err := newItemList.ReleaseDate.Bytes()
-			if err != nil {
-				return err
-			}
-			size, err := box.Write(dataBuf)
+
+		// Modify matched box
+		boxNameMatcher := func(v ilst.EncodedValue) bool { return v.Id == ilstBoxName }
+		for value, err := range iterutil.FilterKeyFunc(ilst.EncodedValues(&newItemList), boxNameMatcher) {
 			if err != nil {
 				return err
 			}
 
+			if _, exists := modifyItemIds[ilstBoxName]; !exists {
+				continue
+			}
+			delete(modifyItemIds, ilstBoxName)
+			size, err := box.Write(value.Bytes)
+			if err != nil {
+				return err
+			}
+			slog.Info("modify", slog.String("id", ilstBoxName), slog.String("diff", fmt.Sprintf("%+d", size-box.DataSize)))
+
 			ilstSizeDiff += size - box.DataSize
+			break
 		}
 	}
 
@@ -135,34 +146,50 @@ func (r *readWriter) Write(dest, tmpDest, tmpDest2 *os.File, newItemList ilst.It
 		return err
 	}
 
-	// Create remaining items `.moov.udta.meta.ilst`
-	for box, err := range WritableWalk(tmpDest, stat.Size(), tmpDest2) {
+	if len(modifyItemIds) == 0 {
+		_, err := tmpDest.Seek(0, io.SeekStart)
 		if err != nil {
 			return err
 		}
-
-		if /* not supporting data */ !strings.HasPrefix(box.Path, ".moov.udta.meta.ilst.") || !box.IsContainable {
-			continue
+		_, err = io.Copy(tmpDest2, tmpDest)
+		if err != nil {
+			return err
 		}
-		if box.InsertNewBox == nil {
-			panic(fmt.Sprintf("box writer is nil (path: %s)", box.Path))
+	} else {
+		// Create remaining items `.moov.udta.meta.ilst`
+		matchLastItemListBox := func(box WritableBox) bool {
+			return box.Path == fmt.Sprintf(".moov.udta.meta.ilst.%s", lastLoadedIlstBoxName)
 		}
+		for box, err := range iterutil.FilterKeyFunc(WritableWalk(tmpDest, stat.Size(), tmpDest2), matchLastItemListBox) {
+			if err != nil {
+				return err
+			}
+			if box.InsertNewBox == nil {
+				panic(fmt.Sprintf("box writer is nil (path: %s)", box.Path))
+			}
 
-		if box.Name == lastLoadedIlstBoxName {
-			dataBuf, err := newItemList.ReleaseDate.Bytes()
-			if err != nil {
-				return err
+			for value, err := range ilst.EncodedValues(&newItemList) {
+				if err != nil {
+					return err
+				}
+
+				if _, exists := modifyItemIds[value.Id]; !exists {
+					continue
+				}
+				delete(modifyItemIds, value.Id)
+				buf := &bytes.Buffer{}
+				err = writeBox(buf, "data", value.Bytes)
+				if err != nil {
+					return err
+				}
+				size, err := box.InsertNewBox(value.Id, buf.Bytes())
+				if err != nil {
+					return err
+				}
+				slog.Info("append", slog.String("id", value.Id), slog.String("diff", fmt.Sprintf("%+d", size)))
+
+				ilstSizeDiff += size
 			}
-			buf := &bytes.Buffer{}
-			err = writeBox(buf, []byte("data"), dataBuf)
-			if err != nil {
-				return err
-			}
-			size, err := box.InsertNewBox("rldt", buf.Bytes())
-			if err != nil {
-				return err
-			}
-			ilstSizeDiff += size
 		}
 	}
 
@@ -171,14 +198,35 @@ func (r *readWriter) Write(dest, tmpDest, tmpDest2 *os.File, newItemList ilst.It
 		return err
 	}
 
-	// Modify `.moov.trak.mdia.minf.stbl.stco`
-	for box, err := range WritableWalk(tmpDest2, stat2.Size(), dest) {
+	if ilstSizeDiff == 0 {
+		slog.Debug("skip modification of chunk offset because .moov.udta.meta.ilst has no size changes", slog.String("diff", fmt.Sprintf("%+d", ilstSizeDiff)))
+		_, err := tmpDest2.Seek(0, io.SeekStart)
 		if err != nil {
 			return err
 		}
+		_, err = io.Copy(dest, tmpDest2)
+		return err
+	}
 
-		if box.Path != ".moov.trak.mdia.minf.stbl.stco" {
-			continue
+	mdatFoundBeforeIlst, err := mdatBoxIsBeforeIlst(Walk(tmpDest2, stat2.Size()))
+	if err != nil {
+		return err
+	}
+	if mdatFoundBeforeIlst {
+		slog.Debug("skip modification of chunk offset because .mdat exists before .moov.udta.meta.ilst", slog.String("diff", fmt.Sprintf("%+d", ilstSizeDiff)))
+		tmpDest2.Seek(0, io.SeekStart)
+		_, err := io.Copy(dest, tmpDest2)
+		return err
+	}
+
+	// Modify `.moov.trak.mdia.minf.stbl.stco`
+	slog.Info("modify chunk offsets", slog.String("diff", fmt.Sprintf("%+d", ilstSizeDiff)))
+	matchSampleTableChunkOffsetBox := func(box WritableBox) bool {
+		return box.Path == ".moov.trak.mdia.minf.stbl.stco"
+	}
+	for box, err := range iterutil.FilterKeyFunc(WritableWalk(tmpDest2, stat2.Size(), dest), matchSampleTableChunkOffsetBox) {
+		if err != nil {
+			return err
 		}
 
 		// Data format
@@ -228,4 +276,32 @@ func (r *readWriter) Write(dest, tmpDest, tmpDest2 *os.File, newItemList ilst.It
 	}
 
 	return nil
+}
+
+func WalkSupportedWritabelBox(rw iter.Seq2[WritableBox, error]) iter.Seq2[WritableBox, error] {
+	matchSupporedBox := func(v WritableBox) bool {
+		return ilstDataBox(v.Box)
+	}
+	return iterutil.FilterKeyFunc(rw, matchSupporedBox)
+}
+
+var (
+	ErrIlstBoxDoesNotExist = errors.New(".moov.udta.meta.ilst does not exists")
+)
+
+func mdatBoxIsBeforeIlst(seq iter.Seq2[Box, error]) (bool, error) {
+	mdatFound := false
+	for box, err := range seq {
+		if err != nil {
+			return false, err
+		}
+
+		switch box.Path {
+		case ".mdat":
+			mdatFound = true
+		case ".moov.udta.meta.ilst":
+			return mdatFound, nil
+		}
+	}
+	return false, errors.New(".moov.udta.meta.ilst does not exists")
 }

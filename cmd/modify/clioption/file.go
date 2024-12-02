@@ -35,11 +35,11 @@ func createDestFile(destFilePath, tmpDestFilePath *string) (dest *os.File, tmpDe
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	tmpDest, err = os.Create(*tmpDestFilePath + "1")
+	tmpDest, err = os.Create(*tmpDestFilePath + "1.m4a")
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	tmpDest2, err = os.Create(*tmpDestFilePath + "2")
+	tmpDest2, err = os.Create(*tmpDestFilePath + "2.m4a")
 	if err != nil {
 		return nil, nil, nil, err
 	}

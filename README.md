@@ -22,12 +22,12 @@ defer file.Close()
 
 r, err := qtffilst.NewReader(file)
 if err != nil {
-  return err
+	return err
 }
 
 itemListTag, err := r.Read()
 if err != nil {
-  return err
+	return err
 }
 ```
 
@@ -41,16 +41,55 @@ if err != nil {
 fmt.Println(itemListTag.AlbumC.Text)
 ```
 
+### Write
+
+```go
+file, _ := os.Open("/path/to/track.m4a")
+defer file.Close()
+tmp1, _ := os.Create("tmp1.m4a")
+defer tmp1.Close()
+defer func() { os.Remove(tmp1.Name()) } ()
+tmp2, _ := os.Create("tmp2.m4a")
+defer tmp2.Close()
+defer func() { os.Remove(tmp2.Name()) } ()
+dest, _ := os.Create("dest.m4a")
+defer dest.Close()
+
+rw, err := qtffilst.ParseReadWriter(file)
+if err != nil {
+	return err
+}
+
+// Sample: Set new title and remove subtitle.
+err = rw.Write(dest, tmp1, tmp2,
+	ilst.ItemList{TitleC: ilst.NewInternationalText("New title")},
+	/* delete ilst */ []string{ /* subtitle */ "(c)st3"},
+)
+if err != nil {
+	return err
+}
+```
+
 ## CLI Usage
 
 ```sh
 make build
 ```
 
-### Read
+### probe
 
 ```sh
-./probe -f /path/to/music.m4a
+qtffprobe -f /path/to/music.m4a
+```
+
+### edit
+
+```sh
+# Edit compilation title
+qtffilst -f /path/to/music.m4a -o out.m4a -d "(c)nam=Title"
+
+# Remove compilation title
+qtffilst -f /path/to/music.m4a -o out.m4a -r "(c)nam"
 ```
 
 ## References

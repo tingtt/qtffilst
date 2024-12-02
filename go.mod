@@ -7,4 +7,4 @@ require (
 	gitlab.com/osaki-lab/iowrapper v0.0.0-20201210013351-bab12bc19f54
 )
 
-require github.com/tingtt/iterutil v1.1.0
+require github.com/tingtt/iterutil v1.1.1

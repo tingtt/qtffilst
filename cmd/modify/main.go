@@ -6,7 +6,6 @@ import (
 
 	"github.com/tingtt/qtffilst"
 	"github.com/tingtt/qtffilst/cmd/modify/clioption"
-	"github.com/tingtt/qtffilst/ilst"
 )
 
 func main() {
@@ -28,7 +27,10 @@ func run() error {
 		return err
 	}
 
-	err = r.Write(cliOption.Dest, cliOption.TmpDest, cliOption.TmpDest2, ilst.ItemList{}, nil)
+	err = r.Write(
+		cliOption.Dest, cliOption.TmpDest, cliOption.TmpDest2,
+		*cliOption.ItemList, cliOption.DeleteItemIds,
+	)
 	if err != nil {
 		return err
 	}
