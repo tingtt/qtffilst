@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"iter"
 	"log/slog"
 	"strings"
 
+	"github.com/tingtt/iterutil"
 	"github.com/tingtt/qtffilst/ilst"
 
 	"gitlab.com/osaki-lab/iowrapper"
@@ -38,14 +40,9 @@ type reader struct {
 func (r *reader) Read() (ilst.ItemList, error) {
 	itemList := ilst.ItemList{}
 
-	for box, err := range Walk(r.f, r.size) {
+	for box, err := range WalkSupportedBox(r.f, r.size) {
 		if err != nil {
 			return ilst.ItemList{}, err
-		}
-
-		if /* not supporting data */ !ilstDataBox(box) {
-			slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB)\n", box.Path, box.DataPosition, box.DataSize))
-			continue
 		}
 
 		buf := &bytes.Buffer{}
@@ -68,4 +65,16 @@ func (r *reader) Read() (ilst.ItemList, error) {
 	}
 
 	return itemList, nil
+}
+
+func WalkSupportedBox(rs io.ReadSeeker, size int64) iter.Seq2[Box, error] {
+	matchSupporedBox := func(v Box) bool {
+		if ilstDataBox(v) {
+			return true
+		}
+		slog.Debug(fmt.Sprintf("box: %-36s (%v, %vB)\n", v.Path, v.DataPosition, v.DataSize))
+		return false
+	}
+
+	return iterutil.FilterKeyFunc(Walk(rs, size), matchSupporedBox)
 }
